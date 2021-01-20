@@ -29,24 +29,24 @@ app.get('/messages', (req, res) => {
     });
     
 });
-app.post('/messages', (req, res) => {
-    var message = new Message(req.body);
-    message.save().then(() => {
-        Message.findOne({message: 'badword'}, (err, cencored) => {
-            if(cencored){
-                console.log('cencored words found', cencored);
-                Message.remove({_id: cencored.id}, (err) => {
-                    console.log('removed cencored message')
-                })
-            }
-        });
-        messages.push(req.body);
-        io.emit('message', req.body);
-        res.sendStatus(200);
-    }).catch((err) => {
+app.post('/messages', async (req, res) => {
+    try {
+        var message = new Message(req.body);
+        var savedMessage =  await message.save();
+        console.log('saved')
+        var censored = await Message.findOne({message: 'badword'});
+        if(censored){
+            await Message.remove({_id: censored.id})
+        }else{
+            io.emit('message', req.body)
+        }
+        res.sendStatus(200)
+    } catch (error) {
         res.sendStatus(500)
-        return console.error(err)
-    });
+        return console.error(error)
+    } finally {
+        console.log('message post called')
+    }
     
 });
 
